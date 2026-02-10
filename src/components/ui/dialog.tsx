@@ -43,7 +43,7 @@ export function DialogContent({ children }: { children?: React.ReactNode }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={() => setOpen(false)} />
-      <div className="relative z-10 bg-white text-black p-4 rounded max-w-md w-full">{children}</div>
+      <div className="relative z-10 bg-popover text-popover-foreground p-4 rounded max-w-md w-full">{children}</div>
     </div>
   );
 }

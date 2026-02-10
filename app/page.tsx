@@ -1,13 +1,17 @@
 "use client";
 
+import Header from "@/components/Header";
+import IconPicker from "@/components/IconPicker";
 import ListCard from "@/components/ListCard";
 import BottomNav from "@/components/ui/BottomNav";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import api from "@/lib/api";
 import { useAuthStore } from "@/store/useAuthStore";
-import { LogOut, Plus, ShoppingCart } from "lucide-react";
+import { Plus, ShoppingCart } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -15,6 +19,7 @@ import { toast } from "sonner";
 interface ListSummary {
   id: string;
   title: string;
+  icon?: string;
   _count: { items: number; members: number };
 }
 
@@ -33,16 +38,25 @@ export default function Dashboard() {
     }
   }, [user]);
 
-  const createList = async () => {
-    const title = prompt("Nome da nova lista:");
-    if (!title?.trim()) return;
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createTitle, setCreateTitle] = useState("");
+  const [createIcon, setCreateIcon] = useState<string | undefined>("shopping");
+  const [creating, setCreating] = useState(false);
 
+  const createList = async () => {
+    if (!createTitle?.trim()) return toast.error("Informe um nome para a lista");
     try {
-      const { data } = await api.post("/lists", { title: title.trim() });
-      setLists([...lists, { ...data, _count: { items: 0, members: 1 } }]);
+      setCreating(true);
+      const { data } = await api.post("/lists", { title: createTitle.trim(), icon: createIcon });
+      setLists([...lists, { ...data, icon: createIcon, _count: { items: 0, members: 1 } }]);
+      setCreateTitle("");
+      setCreateIcon("shopping");
+      setCreateOpen(false);
       toast.success("Lista criada!");
     } catch (error) {
       toast.error("Erro ao criar lista");
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -50,25 +64,9 @@ export default function Dashboard() {
 
   return (
     <div className="flex flex-col h-full">
-      <header className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 border-b border-border">
-        <div className="p-4 flex items-center justify-between gap-4">
-          <div className="flex-1 min-w-0">
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Minhas Listas</h1>
-            <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-          </div>
-          <Button 
-            variant="ghost" 
-            size="icon"
-            onClick={() => useAuthStore.getState().logout()}
-            className="shrink-0"
-            title="Sair"
-          >
-            <LogOut className="h-5 w-5" />
-          </Button>
-        </div>
-      </header>
+      <Header onNotify={() => toast.info('Notificações (a implementar)')} onSearch={(q) => toast.info(q ? `Buscar: ${q}` : 'Digite para buscar')} />
 
-      <div className="flex-1 overflow-auto p-4 space-y-4 pb-36">
+      <div className="flex-1 overflow-auto space-y-4 pb-36">
 
         {loadingLists ? (
           <div className="space-y-3">
@@ -85,7 +83,7 @@ export default function Dashboard() {
         ) : (
           <div className="grid gap-3">
             {lists.map((list) => (
-              <ListCard key={list.id} id={list.id} title={list.title} items={list._count.items} members={list._count.members} />
+              <ListCard key={list.id} id={list.id} title={list.title} items={list._count.items} members={list._count.members} icon={list.icon} />
             ))}
           </div>
         )}
@@ -93,7 +91,7 @@ export default function Dashboard() {
 
       <div className="fixed bottom-6 right-4 sm:right-6 z-20 hidden md:block">
         <Button
-          onClick={createList}
+          onClick={() => setCreateOpen(true)}
           size="lg"
           className="h-14 w-14 rounded-full shadow-lg bg-emerald-600 hover:bg-emerald-700 active:scale-95 transition-transform"
           title="Nova Lista"
@@ -102,7 +100,29 @@ export default function Dashboard() {
         </Button>
       </div>
 
-      <BottomNav onAdd={createList} />
+      <BottomNav onAdd={() => setCreateOpen(true)} />
+
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Nova Lista</DialogTitle>
+          </DialogHeader>
+
+          <div className="mt-2 space-y-3">
+            <Input value={createTitle} onChange={(e) => setCreateTitle(e.target.value)} placeholder="Nome da lista" />
+
+            <div>
+              <div className="text-sm text-muted-foreground mb-2">Ícone</div>
+              <IconPicker value={createIcon} onChange={setCreateIcon} />
+            </div>
+
+            <div className="flex items-center justify-end gap-2 mt-4">
+              <Button variant="ghost" onClick={() => setCreateOpen(false)}>Cancelar</Button>
+              <Button onClick={createList} disabled={creating}>{creating ? 'Criando...' : 'Criar'}</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
