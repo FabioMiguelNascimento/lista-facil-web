@@ -29,7 +29,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" className="dark">
       <body className={`${inter.className} bg-background text-foreground antialiased`}>
-        <main className="flex flex-col min-h-dvh max-w-md mx-auto border-x border-border shadow-2xl relative">
+        <main className="flex flex-col min-h-dvh w-full border-0 md:border-x border-border shadow-2xl relative px-4 md:px-6">
           <AuthLoader />
           {children}
         </main>

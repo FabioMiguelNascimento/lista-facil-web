@@ -12,8 +12,8 @@ import { toast } from "sonner";
 
 export const authFormStyles = {
   form: "space-y-5",
-  input: "h-11 text-base w-full",
-  button: "w-full h-12 bg-emerald-600 hover:bg-emerald-700 text-base font-medium transition-all rounded-md",
+  input: "h-11 md:h-12 text-base md:text-base w-full",
+  button: "w-full h-12 md:h-14 bg-emerald-600 hover:bg-emerald-700 text-base md:text-lg font-medium transition-all rounded-md",
 };
 
 export default function LoginForm() {

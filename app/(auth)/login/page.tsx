@@ -10,29 +10,38 @@ export default function LoginPage() {
 
 
   return (
-    <div className="flex items-start justify-center min-h-dvh px-4 pt-[12vh] sm:pt-[10vh] md:pt-[8vh] sm:px-6">
-      <Card className="w-full max-w-sm border-zinc-800 bg-transparent shadow-2xl">
-        <CardHeader className="pb-4">
-          <div className="px-2">
+    <div className="flex items-center justify-center min-h-dvh px-4 py-8 sm:py-12 sm:px-6">
+      <Card className="w-full max-w-sm md:max-w-4xl lg:max-w-6xl xl:max-w-7xl border-zinc-800 bg-transparent md:bg-slate-800 md:p-6 shadow-2xl">
+        <div className="md:flex md:items-start md:gap-6">
+          <div className="md:w-1/3 px-2 hidden md:block">
             <AuthHeader />
           </div>
-        </CardHeader>
-        <CardContent className="pb-6">
-          <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6 h-11">
-              <TabsTrigger value="login" className="text-sm sm:text-base">Entrar</TabsTrigger>
-              <TabsTrigger value="register" className="text-sm sm:text-base">Criar Conta</TabsTrigger>
-            </TabsList>
 
-            <TabsContent value="login">
-              <LoginForm />
-            </TabsContent>
+          <div className="md:w-2/3 px-2">
+            <CardHeader className="pb-2 md:p-0 md:pb-4 md:pl-0 md:pr-0">
+              <div className="block md:hidden">
+                <AuthHeader />
+              </div>
+            </CardHeader>
 
-            <TabsContent value="register">
-              <RegisterForm />
-            </TabsContent>
-          </Tabs>
-        </CardContent>
+            <CardContent className="pb-6">
+              <Tabs defaultValue="login" className="w-full">
+                <TabsList className="grid w-full grid-cols-2 mb-6 h-11 md:justify-start">
+                  <TabsTrigger value="login" className="text-sm sm:text-base md:text-base">Entrar</TabsTrigger>
+                  <TabsTrigger value="register" className="text-sm sm:text-base md:text-base">Criar Conta</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="login">
+                  <LoginForm />
+                </TabsContent>
+
+                <TabsContent value="register">
+                  <RegisterForm />
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </div>
+        </div>
       </Card>
     </div>
   );

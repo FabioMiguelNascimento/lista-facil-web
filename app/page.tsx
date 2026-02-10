@@ -1,11 +1,13 @@
 "use client";
 
+import ListCard from "@/components/ListCard";
+import BottomNav from "@/components/ui/BottomNav";
 import { Button } from "@/components/ui/button";
-import { Card, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import api from "@/lib/api";
 import { useAuthStore } from "@/store/useAuthStore";
-import { LogOut, Plus, ShoppingCart, Users } from "lucide-react";
+import { LogOut, Plus, ShoppingCart } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -44,12 +46,10 @@ export default function Dashboard() {
     }
   };
 
-  // AuthLoader já gerencia redirecionamento
   if (authChecking || !user) return null;
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header fixo mobile-friendly */}
       <header className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 border-b border-border">
         <div className="p-4 flex items-center justify-between gap-4">
           <div className="flex-1 min-w-0">
@@ -68,7 +68,7 @@ export default function Dashboard() {
         </div>
       </header>
 
-      <div className="flex-1 overflow-auto p-4 space-y-4 pb-24">
+      <div className="flex-1 overflow-auto p-4 space-y-4 pb-36">
 
         {loadingLists ? (
           <div className="space-y-3">
@@ -85,30 +85,13 @@ export default function Dashboard() {
         ) : (
           <div className="grid gap-3">
             {lists.map((list) => (
-              <Card
-                key={list.id}
-                className="p-4 hover:bg-accent/50 cursor-pointer transition-all active:scale-[0.98]"
-                onClick={() => router.push(`/list/${list.id}`)}
-              >
-                <CardTitle className="text-lg font-semibold mb-3">{list.title}</CardTitle>
-                <div className="flex gap-4 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-1.5">
-                    <ShoppingCart className="h-4 w-4" />
-                    <span>{list._count.items} itens</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <Users className="h-4 w-4" />
-                    <span>{list._count.members} membros</span>
-                  </div>
-                </div>
-              </Card>
+              <ListCard key={list.id} id={list.id} title={list.title} items={list._count.items} members={list._count.members} />
             ))}
           </div>
         )}
       </div>
 
-      {/* FAB fixo no bottom */}
-      <div className="fixed bottom-6 right-4 sm:right-6 z-20">
+      <div className="fixed bottom-6 right-4 sm:right-6 z-20 hidden md:block">
         <Button
           onClick={createList}
           size="lg"
@@ -118,6 +101,8 @@ export default function Dashboard() {
           <Plus className="h-6 w-6" />
         </Button>
       </div>
+
+      <BottomNav onAdd={createList} />
     </div>
   );
 }
