@@ -8,7 +8,8 @@ interface User {
 
 interface AuthState {
   user: User | null;
-  isLoading: boolean;
+  isLoading: boolean; // for actions like login/register
+  isCheckingAuth: boolean; // initial bootstrapping auth check
   checkAuth: () => Promise<void>;
   login: (data: any) => Promise<void>;
   register: (data: any) => Promise<void>;
@@ -17,17 +18,18 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
-  isLoading: true,
+  isLoading: false,
+  isCheckingAuth: true,
 
   checkAuth: async () => {
     try {
-      set({ isLoading: true });
+      set({ isCheckingAuth: true });
       const { data } = await api.get('/users/me');
       set({ user: data });
     } catch (error) {
       set({ user: null });
     } finally {
-      set({ isLoading: false });
+      set({ isCheckingAuth: false });
     }
   },
 
@@ -52,6 +54,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ isLoading: false });
     }
   },
+
 
   logout: async () => {
     try {

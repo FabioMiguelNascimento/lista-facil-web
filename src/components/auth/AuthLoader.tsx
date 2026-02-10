@@ -7,7 +7,7 @@ import { useEffect } from 'react';
 const publicRoutes = ['/login'];
 
 export default function AuthLoader() {
-  const { user, isLoading, checkAuth } = useAuthStore();
+  const { user, isCheckingAuth, checkAuth } = useAuthStore();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -15,9 +15,9 @@ export default function AuthLoader() {
     checkAuth();
   }, [checkAuth]);
 
-  // Proteção de rotas
+  // Proteção de rotas — aguarda apenas a verificação inicial
   useEffect(() => {
-    if (isLoading) return;
+    if (isCheckingAuth) return;
 
     const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
 
@@ -26,10 +26,10 @@ export default function AuthLoader() {
     } else if (user && isPublicRoute) {
       router.replace('/');
     }
-  }, [user, isLoading, pathname, router]);
+  }, [user, isCheckingAuth, pathname, router]);
 
   // Loading screen global durante verificação inicial
-  if (isLoading) {
+  if (isCheckingAuth) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">

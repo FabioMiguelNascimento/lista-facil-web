@@ -17,7 +17,7 @@ interface ListSummary {
 }
 
 export default function Dashboard() {
-  const { user, isLoading: authLoading } = useAuthStore();
+  const { user, isCheckingAuth: authChecking } = useAuthStore();
   const router = useRouter();
   const [lists, setLists] = useState<ListSummary[]>([]);
   const [loadingLists, setLoadingLists] = useState(true);
@@ -45,7 +45,7 @@ export default function Dashboard() {
   };
 
   // AuthLoader já gerencia redirecionamento
-  if (authLoading || !user) return null;
+  if (authChecking || !user) return null;
 
   return (
     <div className="flex flex-col h-full">
