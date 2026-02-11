@@ -119,19 +119,23 @@ export default function ListPage() {
         </div>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur border-t border-border pb-safe">
-        <form onSubmit={handleAddItem} className="flex gap-2 max-w-md mx-auto">
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t border-border pb-safe">
+        <form onSubmit={handleAddItem} className="flex gap-4 max-w-md mx-auto items-center">
           <Input
             ref={inputRef}
             value={newItemText}
             onChange={(e) => setNewItemText(e.target.value)}
             placeholder="Adicionar item..."
-            className="h-12 text-base"
+            className="w-full h-10 text-sm rounded-tl-md rounded-bl-md"
             autoComplete="off"
             autoFocus={false}
-          />
-          <Button type="submit" size="icon" className="h-12 w-12 shrink-0 bg-emerald-600 hover:bg-emerald-700 active:scale-95 transition-transform">
-            <Plus className="h-6 w-6" />
+          />  
+          <Button
+            type="submit"
+            className="h-10 w-10 shrink-0 rounded-tr-md rounded-br-md bg-emerald-600 hover:bg-emerald-700 text-white active:scale-95 transition-transform flex items-center justify-center"
+            aria-label="Adicionar item"
+          >
+            <Plus className="h-5 w-5" />
           </Button>
         </form>
       </div>
