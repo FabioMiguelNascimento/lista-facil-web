@@ -1,12 +1,31 @@
 "use client";
 
 import { InviteDialog } from "@/components/InviteDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { api } from "@/lib/api";
 import useListState from "@/hooks/useListState";
 import clsx from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, Check, Plus, ShoppingCart, Trash2 } from "lucide-react";
+import { ArrowLeft, Check, Info, Plus, ShoppingCart, Trash2, Users } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -28,8 +47,10 @@ export default function ListPage() {
   const { id } = useParams() as { id: string };
   const router = useRouter();
 
-
   const [newItemText, setNewItemText] = useState("");
+  const [isInfoOpen, setIsInfoOpen] = useState(false);
+  const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   const { list, addItem, toggleItem, deleteItem, fetchList } = useListState(id);
@@ -71,6 +92,18 @@ export default function ListPage() {
     }
   };
 
+  const handleDeleteList = async () => {
+    setIsDeleting(true);
+    try {
+      await api.delete(`/lists/${id}`);
+      toast.success("Lista deletada com sucesso");
+      router.push("/");
+    } catch (error) {
+      toast.error("Erro ao deletar lista");
+      setIsDeleting(false);
+    }
+  };
+
   if (!list) {
     return (
       <div className="flex items-center justify-center min-h-dvh">
@@ -93,10 +126,91 @@ export default function ListPage() {
           </Button>
           <h1 className="font-bold text-lg truncate">{list.title}</h1>
         </div>
-        <div className="shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
+          <Dialog open={isInfoOpen} onOpenChange={setIsInfoOpen}>
+            <DialogTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <Info className="h-5 w-5" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Informações da Lista</DialogTitle>
+                <DialogDescription>Detalhes e configurações da lista</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Título</span>
+                    <span className="text-sm text-muted-foreground">{list.title}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Itens</span>
+                    <span className="text-sm text-muted-foreground">{list.items.length}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Colaboradores</span>
+                    <span className="text-sm text-muted-foreground">{list.members?.length || 0}</span>
+                  </div>
+                </div>
+                
+                {list.members && list.members.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm font-medium">Membros</span>
+                    </div>
+                    <div className="space-y-1">
+                      {list.members.map((member: any) => (
+                        <div key={member.userId} className="text-sm text-muted-foreground pl-6">
+                          {member.user.email}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="pt-4 border-t">
+                  <Button
+                    variant="destructive"
+                    className="w-full"
+                    onClick={() => {
+                      setIsInfoOpen(false);
+                      setIsDeleteAlertOpen(true);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Deletar Lista
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
           <InviteDialog listId={list.id} />
         </div>
       </header>
+
+      <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. Isso irá deletar permanentemente a lista
+              &quot;{list.title}&quot; e todos os seus itens.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteList}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? "Deletando..." : "Deletar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <div className="flex-1 overflow-y-auto p-4 pb-32 space-y-6">
         <div className="space-y-2.5">
