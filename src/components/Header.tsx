@@ -1,10 +1,12 @@
 "use client";
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { cn } from "@/lib/utils";
+import { useAuthStore } from '@/store/useAuthStore';
 import { Search, X } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import React, { useEffect, useRef, useState } from 'react';
 import InvitesPopover from './InvitesPopover';
-
 interface HeaderProps {
   onSearch?: (query: string) => void;
 }
@@ -13,6 +15,8 @@ export default function Header({ onSearch }: HeaderProps) {
   const [q, setQ] = useState('');
   const [expanded, setExpanded] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const router = useRouter();
+  const { user } = useAuthStore();
 
   useEffect(() => {
     if (expanded) {
@@ -96,6 +100,20 @@ export default function Header({ onSearch }: HeaderProps) {
           )}>
             <InvitesPopover />
           </div>
+
+          <button
+            type="button"
+            onClick={() => router.push('/profile')}
+            className="text-muted-foreground hover:text-foreground p-2 hidden md:inline-flex"
+            aria-label="Perfil"
+          >
+            <div className="hidden md:inline-flex items-center">
+              <Avatar className="h-8 w-8">
+                {user?.avatarUrl && <AvatarImage src={user.avatarUrl} />}
+                <AvatarFallback>{user?.email?.[0]?.toUpperCase()}</AvatarFallback>
+              </Avatar>
+            </div>
+          </button>
 
         </div>
       </div>

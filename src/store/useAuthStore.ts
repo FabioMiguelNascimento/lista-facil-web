@@ -4,6 +4,7 @@ import { create } from 'zustand';
 interface User {
   id: string;
   email: string;
+  avatarUrl?: string | null;
 }
 
 interface AuthState {
@@ -14,6 +15,7 @@ interface AuthState {
   login: (data: any) => Promise<void>;
   register: (data: any) => Promise<void>;
   logout: () => Promise<void>;
+  setAvatarUrl: (url: string | null) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -71,6 +73,17 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ user: null });
     if (typeof window !== 'undefined') {
       window.location.href = '/login';
+    }
+  },
+
+  // Atualiza apenas localmente e tenta persistir no backend (se disponível)
+  setAvatarUrl: async (url: string | null) => {
+    set((state) => ({ user: state.user ? { ...state.user, avatarUrl: url } : state.user }));
+    try {
+      // Tentativa de persistir no backend caso exista endpoint
+      await api.patch('/users/me', { avatarUrl: url });
+    } catch (e) {
+      // Silencioso: backend pode não suportar ainda
     }
   },
 }));

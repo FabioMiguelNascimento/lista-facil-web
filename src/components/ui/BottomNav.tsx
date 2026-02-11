@@ -1,5 +1,6 @@
 "use client";
 import { Home, Plus, User } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { Button } from './button';
 
 interface Props {
@@ -10,10 +11,11 @@ interface Props {
 }
 
 export default function BottomNav({ active = 'home', onAdd, onHome, onProfile }: Props) {
+    const router = useRouter();
     return (
         <nav className="fixed bottom-4 left-4 right-4 z-30 md:hidden">
             <div className="mx-auto max-w-md bg-transparent backdrop-blur-sm border border-zinc-800 rounded-full px-3 py-2 flex items-center justify-between shadow-lg">
-                <Button variant="ghost" onClick={onHome} aria-label="Home" className={`${active === 'home' ? 'text-emerald-400' : 'text-muted-foreground'}`}>
+                <Button variant="ghost" onClick={onHome ?? (() => router.push('/'))} aria-label="Home" className={`${active === 'home' ? 'text-emerald-400' : 'text-muted-foreground'}`}>
                     <Home />
                 </Button>
 
@@ -21,7 +23,7 @@ export default function BottomNav({ active = 'home', onAdd, onHome, onProfile }:
                     <Plus className="h-6 w-6" />
                 </Button>
 
-                <Button variant="ghost" onClick={onProfile} aria-label="Perfil" className={`${active === 'profile' ? 'text-emerald-400' : 'text-muted-foreground'}`}>
+                <Button variant="ghost" onClick={onProfile ?? (() => router.push('/profile'))} aria-label="Perfil" className={`${active === 'profile' ? 'text-emerald-400' : 'text-muted-foreground'}`}>
                     <User />
                 </Button>
             </div>
