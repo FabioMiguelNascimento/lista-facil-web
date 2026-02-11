@@ -7,10 +7,9 @@ import InvitesPopover from './InvitesPopover';
 
 interface HeaderProps {
   onSearch?: (query: string) => void;
-  onNotify?: () => void;
 }
 
-export default function Header({ onSearch, onNotify }: HeaderProps) {
+export default function Header({ onSearch }: HeaderProps) {
   const [q, setQ] = useState('');
   const [expanded, setExpanded] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);

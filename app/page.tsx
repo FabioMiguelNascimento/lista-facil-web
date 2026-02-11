@@ -9,54 +9,31 @@ import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import api from "@/lib/api";
+import { useCreateListDialog } from "@/hooks/useCreateListDialog";
+import { useDashboardState } from "@/hooks/useDashboardState";
 import { useAuthStore } from "@/store/useAuthStore";
 import { Plus, ShoppingCart } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-interface ListSummary {
-  id: string;
-  title: string;
-  icon?: string;
-  _count: { items: number; members: number };
-}
-
 export default function Dashboard() {
-  const { user, isCheckingAuth: authChecking } = useAuthStore();
   const router = useRouter();
-  const [lists, setLists] = useState<ListSummary[]>([]);
-  const [loadingLists, setLoadingLists] = useState(true);
+  const { user, isCheckingAuth: authChecking } = useAuthStore();
+  const { lists, loading, createList } = useDashboardState();
+  const dialog = useCreateListDialog();
 
-  useEffect(() => {
-    if (user) {
-      api.get("/lists")
-        .then((res: any) => setLists(res.data))
-        .catch(() => toast.error("Erro ao carregar listas"))
-        .finally(() => setLoadingLists(false));
-    }
-  }, [user]);
-
-  const [createOpen, setCreateOpen] = useState(false);
-  const [createTitle, setCreateTitle] = useState("");
-  const [createIcon, setCreateIcon] = useState<string | undefined>("shopping");
-  const [creating, setCreating] = useState(false);
-
-  const createList = async () => {
-    if (!createTitle?.trim()) return toast.error("Informe um nome para a lista");
+  const handleCreate = async () => {
     try {
-      setCreating(true);
-      const { data } = await api.post("/lists", { title: createTitle.trim(), icon: createIcon });
-      setLists([...lists, { ...data, icon: createIcon, _count: { items: 0, members: 1 } }]);
-      setCreateTitle("");
-      setCreateIcon("shopping");
-      setCreateOpen(false);
-      toast.success("Lista criada!");
+      dialog.setIsCreating(true);
+      const listId = await createList(dialog.title, dialog.icon);
+      dialog.close();
+      if (listId) {
+        router.push(`/list/${listId}`);
+      }
     } catch (error) {
-      toast.error("Erro ao criar lista");
+      // Erro já tratado no hook
     } finally {
-      setCreating(false);
+      dialog.setIsCreating(false);
     }
   };
 
@@ -64,11 +41,11 @@ export default function Dashboard() {
 
   return (
     <div className="flex flex-col h-full">
-      <Header onNotify={() => toast.info('Notificações (a implementar)')} onSearch={(q) => toast.info(q ? `Buscar: ${q}` : 'Digite para buscar')} />
+      <Header onSearch={(q) => toast.info(q ? `Buscar: ${q}` : 'Digite para buscar')} />
 
       <div className="flex-1 overflow-auto space-y-4 pb-36">
 
-        {loadingLists ? (
+        {loading ? (
           <div className="space-y-3">
             <Skeleton className="h-24 w-full rounded-xl" />
             <Skeleton className="h-24 w-full rounded-xl" />
@@ -91,7 +68,7 @@ export default function Dashboard() {
 
       <div className="fixed bottom-6 right-4 sm:right-6 z-20 hidden md:block">
         <Button
-          onClick={() => setCreateOpen(true)}
+          onClick={dialog.open}
           size="lg"
           className="h-14 w-14 rounded-full shadow-lg bg-emerald-600 hover:bg-emerald-700 active:scale-95 transition-transform"
           title="Nova Lista"
@@ -100,25 +77,32 @@ export default function Dashboard() {
         </Button>
       </div>
 
-      <BottomNav onAdd={() => setCreateOpen(true)} />
+      <BottomNav onAdd={dialog.open} />
 
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+      <Dialog open={dialog.isOpen} onOpenChange={dialog.setIsOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Nova Lista</DialogTitle>
           </DialogHeader>
 
           <div className="mt-2 space-y-3">
-            <Input value={createTitle} onChange={(e) => setCreateTitle(e.target.value)} placeholder="Nome da lista" />
+            <Input 
+              value={dialog.title} 
+              onChange={(e) => dialog.setTitle(e.target.value)} 
+              placeholder="Nome da lista"
+              onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
+            />
 
             <div>
               <div className="text-sm text-muted-foreground mb-2">Ícone</div>
-              <IconPicker value={createIcon} onChange={setCreateIcon} />
+              <IconPicker value={dialog.icon} onChange={dialog.setIcon} />
             </div>
 
             <div className="flex items-center justify-end gap-2 mt-4">
-              <Button variant="ghost" onClick={() => setCreateOpen(false)}>Cancelar</Button>
-              <Button onClick={createList} disabled={creating}>{creating ? 'Criando...' : 'Criar'}</Button>
+              <Button variant="ghost" onClick={dialog.close}>Cancelar</Button>
+              <Button onClick={handleCreate} disabled={dialog.isCreating}>
+                {dialog.isCreating ? 'Criando...' : 'Criar'}
+              </Button>
             </div>
           </div>
         </DialogContent>

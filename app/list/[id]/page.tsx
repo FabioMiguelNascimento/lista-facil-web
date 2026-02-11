@@ -3,8 +3,7 @@
 import { InviteDialog } from "@/components/InviteDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useSocket } from "@/hooks/useSocket";
-import api from "@/lib/api";
+import useListState from "@/hooks/useListState";
 import clsx from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, Check, Plus, ShoppingCart, Trash2 } from "lucide-react";
@@ -28,107 +27,45 @@ interface ListDetails {
 export default function ListPage() {
   const { id } = useParams() as { id: string };
   const router = useRouter();
-  const { socket } = useSocket();
 
-  const [list, setList] = useState<ListDetails | null>(null);
+
   const [newItemText, setNewItemText] = useState("");
   const inputRef = useRef<HTMLInputElement | null>(null);
 
-
-
-  useEffect(() => {
-    api.get(`/lists/${id}`)
-      .then((res: any) => setList(res.data))
-      .catch(() => {
-        toast.error("Lista não encontrada");
-        router.push("/");
-      });
-  }, [id, router]);
+  const { list, addItem, toggleItem, deleteItem, fetchList } = useListState(id);
 
   useEffect(() => {
-    if (!socket) return;
-
-    const join = () => {
-      socket.emit("join_list", { listId: id });
-      console.log('[socket] joined list', id, 'socketId=', socket.id);
-    };
-
-    join();
-    socket.on('connect', join);
-
-    socket.on("item_created", (newItem: Item) => {
-      console.log('[socket] item_created received', newItem, 'socketId=', socket.id);
-      setList((prev) => {
-        if (!prev) return null;
-        if (prev.items.some((i) => i.id === newItem.id)) {
-          return prev;
-        }
-        return { ...prev, items: [...prev.items, newItem] };
-      });
+    fetchList().catch(() => {
+      toast.error("Lista não encontrada");
+      router.push("/");
     });
+  }, [fetchList, router]);
 
-    socket.on("item_updated", (updatedItem: Item) => {
-      setList((prev) => {
-        if (!prev) return null;
-        return { ...prev, items: prev.items.map((item) => (item.id === updatedItem.id ? updatedItem : item)) };
-      });
-    });
-
-    socket.on("item_deleted", ({ id }: { id: string }) => {
-      setList((prev) => (prev ? { ...prev, items: prev.items.filter((i) => i.id !== id) } : null));
-    });
-
-    return () => {
-      socket.off("item_created");
-      socket.off("item_updated");
-      socket.off("item_deleted");
-      socket.off('connect', join);
-    };
-  }, [socket, id]);
-
-  const addItem = async (e?: React.FormEvent) => {
+  const handleAddItem = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!newItemText.trim()) return;
 
+    const text = newItemText;
+    setNewItemText("");
     try {
-      const text = newItemText;
-      setNewItemText("");
-      const { data } = await api.post("/items", { content: text, listId: id });
-      setList((prev) => {
-        if (!prev) return prev;
-        if (prev.items.some((i) => i.id === data.id)) {
-          return prev;
-        }
-        return { ...prev, items: [...prev.items, data] };
-      });
+      await addItem(text);
       inputRef.current?.focus();
     } catch (error) {
       toast.error("Erro ao adicionar item");
     }
   };
 
-  const toggleItem = async (item: Item) => {
-    const newStatus = !item.checked;
-    setList((prev) => {
-      if (!prev) return null;
-      return { ...prev, items: prev.items.map((i) => (i.id === item.id ? { ...i, checked: newStatus } : i)) };
-    });
-
+  const handleToggleItem = async (item: Item) => {
     try {
-      await api.patch(`/items/${item.id}`, { checked: newStatus });
+      await toggleItem(item);
     } catch (error) {
-      setList((prev) => {
-        if (!prev) return null;
-        return { ...prev, items: prev.items.map((i) => (i.id === item.id ? { ...i, checked: item.checked } : i)) };
-      });
       toast.error("Erro de conexão");
     }
   };
 
-  const deleteItem = async (itemId: string) => {
-    setList((prev) => (prev ? { ...prev, items: prev.items.filter((i) => i.id !== itemId) } : null));
+  const handleDeleteItem = async (itemId: string) => {
     try {
-      await api.delete(`/items/${itemId}`);
+      await deleteItem(itemId);
     } catch (error) {
       toast.error("Erro ao deletar item");
     }
@@ -165,8 +102,8 @@ export default function ListPage() {
         <div className="space-y-2.5">
           <AnimatePresence mode="popLayout">
             <div className="divide-y divide-border rounded-xl overflow-hidden shadow-sm">
-              {items.map((item) => (
-                <ItemRow key={item.id} item={item} onToggle={() => toggleItem(item)} onDelete={() => deleteItem(item.id)} />
+              {items.map((item: Item) => (
+                <ItemRow key={item.id} item={item} onToggle={() => handleToggleItem(item)} onDelete={() => handleDeleteItem(item.id)} />
               ))}
             </div>
           </AnimatePresence>
@@ -183,7 +120,7 @@ export default function ListPage() {
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur border-t border-border pb-safe">
-        <form onSubmit={addItem} className="flex gap-2 max-w-md mx-auto">
+        <form onSubmit={handleAddItem} className="flex gap-2 max-w-md mx-auto">
           <Input
             ref={inputRef}
             value={newItemText}
