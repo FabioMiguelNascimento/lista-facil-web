@@ -9,7 +9,7 @@ import clsx from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, Check, Plus, ShoppingCart, Trash2 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 interface Item {
@@ -17,6 +17,7 @@ interface Item {
   content: string;
   checked: boolean;
 }
+
 
 interface ListDetails {
   id: string;
@@ -31,6 +32,9 @@ export default function ListPage() {
 
   const [list, setList] = useState<ListDetails | null>(null);
   const [newItemText, setNewItemText] = useState("");
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+
 
   useEffect(() => {
     api.get(`/lists/${id}`)
@@ -44,10 +48,23 @@ export default function ListPage() {
   useEffect(() => {
     if (!socket) return;
 
-    socket.emit("join_list", { listId: id });
+    const join = () => {
+      socket.emit("join_list", { listId: id });
+      console.log('[socket] joined list', id, 'socketId=', socket.id);
+    };
+
+    join();
+    socket.on('connect', join);
 
     socket.on("item_created", (newItem: Item) => {
-      setList((prev) => (prev ? { ...prev, items: [...prev.items, newItem] } : null));
+      console.log('[socket] item_created received', newItem, 'socketId=', socket.id);
+      setList((prev) => {
+        if (!prev) return null;
+        if (prev.items.some((i) => i.id === newItem.id)) {
+          return prev;
+        }
+        return { ...prev, items: [...prev.items, newItem] };
+      });
     });
 
     socket.on("item_updated", (updatedItem: Item) => {
@@ -65,6 +82,7 @@ export default function ListPage() {
       socket.off("item_created");
       socket.off("item_updated");
       socket.off("item_deleted");
+      socket.off('connect', join);
     };
   }, [socket, id]);
 
@@ -76,7 +94,14 @@ export default function ListPage() {
       const text = newItemText;
       setNewItemText("");
       const { data } = await api.post("/items", { content: text, listId: id });
-      setList((prev) => (prev ? { ...prev, items: [...prev.items, data] } : null));
+      setList((prev) => {
+        if (!prev) return prev;
+        if (prev.items.some((i) => i.id === data.id)) {
+          return prev;
+        }
+        return { ...prev, items: [...prev.items, data] };
+      });
+      inputRef.current?.focus();
     } catch (error) {
       toast.error("Erro ao adicionar item");
     }
@@ -120,14 +145,13 @@ export default function ListPage() {
     );
   }
 
-  const pendingItems = list.items.filter((i) => !i.checked);
-  const checkedItems = list.items.filter((i) => i.checked);
+  const items = list.items;
 
   return (
     <div className="flex flex-col h-dvh bg-background">
       <header className="flex items-center justify-between p-4 border-b border-border bg-background/95 backdrop-blur z-10 sticky top-0">
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          <Button variant="ghost" size="icon" onClick={() => router.push("/")} className="shrink-0"> 
+          <Button variant="ghost" size="icon" onClick={() => router.push("/")} className="shrink-0">
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <h1 className="font-bold text-lg truncate">{list.title}</h1>
@@ -140,40 +164,32 @@ export default function ListPage() {
       <div className="flex-1 overflow-y-auto p-4 pb-32 space-y-6">
         <div className="space-y-2.5">
           <AnimatePresence mode="popLayout">
-            {pendingItems.map((item) => (
-              <ItemRow key={item.id} item={item} onToggle={() => toggleItem(item)} onDelete={() => deleteItem(item.id)} />
-            ))}
+            <div className="divide-y divide-border rounded-xl overflow-hidden shadow-sm">
+              {items.map((item) => (
+                <ItemRow key={item.id} item={item} onToggle={() => toggleItem(item)} onDelete={() => deleteItem(item.id)} />
+              ))}
+            </div>
           </AnimatePresence>
-          {pendingItems.length === 0 && checkedItems.length === 0 && (
+
+          {items.length === 0 && (
             <div className="text-center text-muted-foreground py-16">
-              <ShoppingCart className="h-12 w-12 mx-auto mb-3 opacity-30" />
-              <p className="text-sm">Lista vazia</p>
-              <p className="text-xs mt-1">Adicione itens abaixo</p>
+              <ShoppingCart className="h-14 w-14 mx-auto mb-4 opacity-40" />
+              <p className="text-sm font-semibold mb-2">Sua lista está vazia</p>
+              <p className="text-xs mb-4">Adicione itens para começar a compartilhar tarefas com colaboradores.</p>
+              <Button variant="outline" onClick={() => inputRef.current?.focus()}>Adicionar primeiro item</Button>
             </div>
           )}
         </div>
-
-        {checkedItems.length > 0 && (
-          <>
-            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-widest pl-2 pt-2">Concluídos ({checkedItems.length})</div>
-            <div className="space-y-2.5 opacity-60">
-              <AnimatePresence mode="popLayout">
-                {checkedItems.map((item) => (
-                  <ItemRow key={item.id} item={item} onToggle={() => toggleItem(item)} onDelete={() => deleteItem(item.id)} />
-                ))}
-              </AnimatePresence>
-            </div>
-          </>
-        )}
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur border-t border-border pb-safe">
         <form onSubmit={addItem} className="flex gap-2 max-w-md mx-auto">
-          <Input 
-            value={newItemText} 
-            onChange={(e) => setNewItemText(e.target.value)} 
-            placeholder="Adicionar item..." 
-            className="h-12 text-base" 
+          <Input
+            ref={inputRef}
+            value={newItemText}
+            onChange={(e) => setNewItemText(e.target.value)}
+            placeholder="Adicionar item..."
+            className="h-12 text-base"
             autoComplete="off"
             autoFocus={false}
           />
@@ -192,13 +208,13 @@ function ItemRow({ item, onToggle, onDelete }: { item: Item; onToggle: () => voi
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.95, height: 0, margin: 0, padding: 0 }}
-      transition={{ duration: 0.18 }}
+      exit={{ opacity: 0, scale: 0.98, height: 0, margin: 0, padding: 0 }}
+      transition={{ duration: 0.16 }}
       className={clsx(
-        "group flex items-center justify-between p-3.5 rounded-xl border transition-colors",
-        item.checked ? "bg-zinc-900/30 border-transparent" : "bg-card border-border shadow-sm"
+        "group flex items-center justify-between px-4 py-3 bg-card",
+        item.checked ? "opacity-70" : ""
       )}
       onMouseEnter={() => setShowDelete(true)}
       onMouseLeave={() => setShowDelete(false)}
@@ -218,6 +234,7 @@ function ItemRow({ item, onToggle, onDelete }: { item: Item; onToggle: () => voi
           )}
         </motion.div>
 
+
         <motion.span
           className="text-base transition-all min-w-0 wrap-break-word"
           initial={false}
@@ -229,9 +246,9 @@ function ItemRow({ item, onToggle, onDelete }: { item: Item; onToggle: () => voi
         </motion.span>
       </div>
 
-      <motion.button 
-        whileTap={{ scale: 0.9 }} 
-        onClick={onDelete} 
+      <motion.button
+        whileTap={{ scale: 0.9 }}
+        onClick={onDelete}
         className={clsx(
           "shrink-0 p-2 rounded-lg transition-all",
           showDelete ? "opacity-100" : "opacity-0 md:opacity-0 md:group-hover:opacity-100"
