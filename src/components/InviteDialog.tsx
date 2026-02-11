@@ -1,136 +1,165 @@
 "use client";
 
+import { AlertCircle, CheckCircle2, Loader2, Mail, UserPlus } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import api from "@/lib/api";
-import { Check, Mail, UserPlus } from "lucide-react";
-import { useState } from "react";
-import { toast } from "sonner";
 
-export function InviteDialog({ listId }: { listId: string }) {
+interface InviteDialogProps {
+  listId: string;
+}
+
+export function InviteDialog({ listId }: InviteDialogProps) {
+  const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
-  const [isOpen, setIsOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const validateEmail = (value: string): boolean => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+  };
 
-  const handleInvite = async () => {
-    if (!isValidEmail) {
-      toast.error("Digite um e-mail válido");
-      return;
-    }
+  const resetForm = () => {
+    setEmail("");
+    setError("");
+  };
 
-    try {
-      setIsLoading(true);
-      await api.post("/invites", { email: email.trim(), listId });
-      
-      setSuccess(true);
-      toast.success("Convite enviado com sucesso!", {
-        description: `Um e-mail foi enviado para ${email}`,
-      });
-      
-      setTimeout(() => {
-        setIsOpen(false);
-        setEmail("");
-        setSuccess(false);
-      }, 1500);
-    } catch (e: any) {
-      const message = e?.response?.data?.message || "Erro ao enviar convite";
-      toast.error(message);
-    } finally {
-      setIsLoading(false);
+  const handleOpenChange = (isOpen: boolean) => {
+    setOpen(isOpen);
+    if (!isOpen) {
+      setTimeout(resetForm, 200);
     }
   };
 
-  const handleOpenChange = (open: boolean) => {
-    setIsOpen(open);
-    if (!open) {
-      setEmail("");
-      setSuccess(false);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const trimmedEmail = email.trim().toLowerCase();
+    
+    if (!validateEmail(trimmedEmail)) {
+      setError("Por favor, insira um e-mail válido");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    try {
+      await api.post("/invites", {
+        email: trimmedEmail,
+        listId,
+      });
+
+      toast.success("Convite enviado com sucesso!", {
+        description: `Um e-mail foi enviado para ${trimmedEmail}`,
+        icon: <CheckCircle2 className="h-5 w-5" />,
+      });
+
+      setOpen(false);
+    } catch (err: any) {
+      const errorMessage = err?.response?.data?.message || "Erro ao enviar convite";
+      setError(errorMessage);
+      toast.error("Não foi possível enviar o convite", {
+        description: errorMessage,
+        icon: <AlertCircle className="h-5 w-5" />,
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="icon" title="Convidar colaborador">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="hover:bg-accent transition-colors"
+          aria-label="Convidar colaborador"
+        >
           <UserPlus className="h-5 w-5" />
         </Button>
       </DialogTrigger>
+
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <UserPlus className="h-5 w-5" />
+            <div className="p-2 rounded-lg bg-primary/10">
+              <Mail className="h-5 w-5 text-primary" />
+            </div>
             Convidar Colaborador
           </DialogTitle>
+          <DialogDescription>
+            Envie um convite por e-mail para adicionar um novo colaborador a esta lista.
+          </DialogDescription>
         </DialogHeader>
-        
-        <div className="space-y-4 mt-4">
+
+        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           <div className="space-y-2">
-            <Label htmlFor="email" className="text-sm font-medium">
-              E-mail do colaborador
-            </Label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="email"
-                type="email"
-                placeholder="colaborador@exemplo.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && isValidEmail) {
-                    e.preventDefault();
-                    handleInvite();
-                  }
-                }}
-                className="pl-9"
-                disabled={isLoading || success}
-              />
-            </div>
-            {email && !isValidEmail && (
-              <p className="text-xs text-destructive">Digite um e-mail válido</p>
+            <Label htmlFor="email">E-mail do colaborador</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="exemplo@email.com"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (error) setError("");
+              }}
+              disabled={loading}
+              className="w-full"
+              autoFocus
+              required
+            />
+            {error && (
+              <p className="text-sm text-destructive flex items-center gap-1">
+                <AlertCircle className="h-3.5 w-3.5" />
+                {error}
+              </p>
             )}
           </div>
 
-          <div className="flex items-center justify-end gap-2 pt-2">
+          <div className="flex gap-3 pt-2">
             <Button
-              variant="ghost"
-              onClick={() => handleOpenChange(false)}
-              disabled={isLoading}
+              type="button"
+              variant="outline"
+              onClick={() => setOpen(false)}
+              disabled={loading}
+              className="flex-1"
             >
               Cancelar
             </Button>
             <Button
-              onClick={handleInvite}
-              disabled={!isValidEmail || isLoading || success}
-              className="min-w-[100px]"
+              type="submit"
+              disabled={loading || !email.trim()}
+              className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
             >
-              {success ? (
+              {loading ? (
                 <>
-                  <Check className="h-4 w-4 mr-2" />
-                  Enviado!
-                </>
-              ) : isLoading ? (
-                <>
-                  <div className="h-4 w-4 mr-2 border-2 border-background/30 border-t-background rounded-full animate-spin" />
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Enviando...
                 </>
               ) : (
-                "Enviar Convite"
+                <>
+                  <Mail className="h-4 w-4 mr-2" />
+                  Enviar Convite
+                </>
               )}
             </Button>
           </div>
-        </div>
+        </form>
       </DialogContent>
     </Dialog>
   );
