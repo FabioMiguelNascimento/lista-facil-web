@@ -30,10 +30,14 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useAuthStore } from '@/store/useAuthStore';
+
 interface Item {
   id: string;
   content: string;
   checked: boolean;
+  owner?: { id: string; email: string; avatarUrl?: string | null } | null;
 }
 
 
@@ -289,16 +293,24 @@ function ItemRow({ item, onToggle, onDelete }: { item: Item; onToggle: () => voi
           )}
         </motion.div>
 
+        <div className="flex items-center gap-3 min-w-0">
+          <Avatar className="h-6 w-6">
+            {item.owner?.avatarUrl && <AvatarImage src={item.owner.avatarUrl} />}
+            <AvatarFallback className="text-xs font-semibold text-white">
+              {(item.owner?.email?.[0] || useAuthStore.getState().user?.email?.[0] || '?').toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
 
-        <motion.span
-          className="text-base transition-all min-w-0 wrap-break-word"
-          initial={false}
-          animate={item.checked ? { opacity: 0.6 } : { opacity: 1 }}
-          style={{ textDecoration: item.checked ? "line-through" : "none" }}
-          transition={{ duration: 0.18 }}
-        >
-          {item.content}
-        </motion.span>
+          <motion.span
+            className="text-base transition-all min-w-0 wrap-break-word"
+            initial={false}
+            animate={item.checked ? { opacity: 0.6 } : { opacity: 1 }}
+            style={{ textDecoration: item.checked ? "line-through" : "none" }}
+            transition={{ duration: 0.18 }}
+          >
+            {item.content}
+          </motion.span>
+        </div>
       </div>
 
       <motion.button
