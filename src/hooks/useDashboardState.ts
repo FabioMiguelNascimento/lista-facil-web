@@ -8,6 +8,8 @@ export interface ListSummary {
   title: string;
   icon?: string;
   _count: { items: number; members: number };
+  // nova propriedade retornada pela API: membros com dados do usuário
+  members?: Array<{ user: { id: string; email: string; avatarUrl?: string | null } }>;
 }
 
 export function useDashboardState() {
@@ -39,6 +41,8 @@ export function useDashboardState() {
       title: title.trim(),
       icon,
       _count: { items: 0, members: 1 },
+      // otimista: o criador aparece como único membro (email preenchido do user store)
+      members: [{ user: { id: useAuthStore.getState().user?.id ?? tempId, email: useAuthStore.getState().user?.email ?? 'you', avatarUrl: useAuthStore.getState().user?.avatarUrl ?? null } }],
     };
 
     setLists((prev) => [...prev, optimisticList]);

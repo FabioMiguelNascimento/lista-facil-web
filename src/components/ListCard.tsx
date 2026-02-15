@@ -9,18 +9,22 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 
+interface MemberWithUser {
+  user: { id: string; email: string; avatarUrl?: string | null };
+}
+
 interface Props {
   id: string;
   title: string;
   items: number;
-  members: number;
+  members: (MemberWithUser)[];
   icon?: string;
 }
 
 export default function ListCard({ id, title, items, members, icon }: Props) {
   const router = useRouter();
   const initial = title?.trim().charAt(0).toUpperCase() || "L";
-  const count = Math.min(members, 3);
+  const count = Math.min(members.length, 3);
   const [currentIcon, setCurrentIcon] = useState(icon ?? 'list');
   const [open, setOpen] = useState(false);
 
@@ -88,11 +92,23 @@ export default function ListCard({ id, title, items, members, icon }: Props) {
         </div>
 
         <div className="flex items-center -space-x-2">
-          {Array.from({ length: count }).map((_, i) => (
-              <Avatar className="h-8 w-8">
+          {members && members.length > 0 ? (
+            members.slice(0, 3).map((m, i) => (
+              <Avatar key={i} className="h-8 w-8">
+                {m?.user?.avatarUrl ? (
+                  <img src={m.user.avatarUrl} alt={m.user.email} className="h-full w-full object-cover" />
+                ) : (
+                  <AvatarFallback className="text-xs font-semibold text-white">{(m?.user?.email?.[0] || title?.[0] || '?').toUpperCase()}</AvatarFallback>
+                )}
+              </Avatar>
+            ))
+          ) : (
+            Array.from({ length: count }).map((_, i) => (
+              <Avatar key={i} className="h-8 w-8">
                 <AvatarFallback className="text-xs font-semibold text-white">{initial}</AvatarFallback>
               </Avatar>
-          ))}
+            ))
+          )}
         </div>
       </div>
     </Card>

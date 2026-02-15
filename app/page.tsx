@@ -60,7 +60,14 @@ export default function Dashboard() {
         ) : (
           <div className="grid gap-3">
             {lists.map((list) => (
-              <ListCard key={list.id} id={list.id} title={list.title} items={list._count.items} members={list._count.members} icon={list.icon} />
+              <ListCard
+                key={list.id}
+                id={list.id}
+                title={list.title}
+                items={list._count.items}
+                members={list.members ?? []}
+                icon={list.icon}
+              />
             ))}
           </div>
         )}
