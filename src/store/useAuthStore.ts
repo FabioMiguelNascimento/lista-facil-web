@@ -9,8 +9,8 @@ interface User {
 
 interface AuthState {
   user: User | null;
-  isLoading: boolean; // for actions like login/register
-  isCheckingAuth: boolean; // initial bootstrapping auth check
+  isLoading: boolean;
+  isCheckingAuth: boolean;
   checkAuth: () => Promise<void>;
   login: (data: any) => Promise<void>;
   register: (data: any) => Promise<void>;
@@ -41,6 +41,10 @@ export const useAuthStore = create<AuthState>((set) => ({
       await api.post('/auth/login', credentials);
       const { data } = await api.get('/users/me');
       set({ user: data });
+    } catch (error: any) {
+      const msg = error?.response?.data?.message || error?.message || 'Unknown error';
+      alert(`Erro no Login: ${JSON.stringify(msg)}`);
+      throw error;
     } finally {
       set({ isLoading: false });
     }
@@ -52,11 +56,14 @@ export const useAuthStore = create<AuthState>((set) => ({
       await api.post('/auth/register', credentials);
       const { data } = await api.get('/users/me');
       set({ user: data });
+    } catch (error: any) {
+      const msg = error?.response?.data?.message || error?.message || 'Unknown error';
+      alert(`Erro no Registro: ${JSON.stringify(msg)}`);
+      throw error;
     } finally {
       set({ isLoading: false });
     }
   },
-
 
   logout: async () => {
     try {
@@ -76,14 +83,11 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
-  // Atualiza apenas localmente e tenta persistir no backend (se disponível)
   setAvatarUrl: async (url: string | null) => {
     set((state) => ({ user: state.user ? { ...state.user, avatarUrl: url } : state.user }));
     try {
-      // Tentativa de persistir no backend caso exista endpoint
       await api.patch('/users/me', { avatarUrl: url });
     } catch (e) {
-      // Silencioso: backend pode não suportar ainda
     }
   },
 }));
