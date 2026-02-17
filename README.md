@@ -1,34 +1,71 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Lista Fácil — Web 
 
-## Getting Started
+Interface web da aplicação **Lista Fácil**. Consumidora da API (`lista-facil-backend`) para criar/editar listas e itens em tempo real.
 
-First, run the development server:
+## Tecnologias
+
+- TypeScript, React
+- Framework: Next.js (app router)
+- Estilização: Tailwind CSS
+- Estado: Zustand
+- Websockets: socket.io-client
+
+---
+
+## Rodando localmente
+
+1. Clone o repositório:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/FabioMiguelNascimento/lista-facil-frontend.git
+cd lista-facil-web
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Instale dependências:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+pnpm install
+```
 
-## Learn More
+3. Variáveis de ambiente
 
-To learn more about Next.js, take a look at the following resources:
+Crie um arquivo `.env` (há um `.env` de exemplo no repositório). Exemplo mínimo:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```env
+NEXT_PUBLIC_API_URL="http://localhost:8080"
+NEXT_PUBLIC_SOCKET_URL="http://localhost:8080"
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+> Observação: o backend deste projeto usa por padrão a porta `8080` — ajuste `NEXT_PUBLIC_API_URL` caso o backend rode em outra porta.
 
-## Deploy on Vercel
+4. Inicie o servidor de desenvolvimento:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+pnpm run dev
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+A aplicação estará disponível em `http://localhost:3000` por padrão.
+
+---
+
+## Scripts úteis
+
+- `pnpm run dev` — servidor de desenvolvimento
+- `pnpm run build` — build de produção
+- `pnpm run start` — iniciar build em produção
+
+---
+
+## Onde configurar a URL da API
+
+O cliente Axios usa `process.env.NEXT_PUBLIC_API_URL` (veja `src/lib/api.ts`).
+
+---
+
+## Deploy
+
+Você pode fazer deploy em Vercel, Netlify ou qualquer serviço que suporte Next.js. Para produção, rode `pnpm build` e exponha `NEXT_PUBLIC_API_URL` apontando para a API em produção.
+
+---
+
+Qualquer alteração de rota/API — avise que eu atualizo o README com exemplos de requests e endpoints. 
